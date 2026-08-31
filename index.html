@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="de-AT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Donnerstagrunde TC Kamper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --chalk:#F5F7F1;
+    --paper:#FFFFFF;
+    --ink:#1E2A22;
+    --ink-soft:#5B6B60;
+    --line:#DCE0D6;
+    --ball:#C7D934;
+    --ball-ink:#38430E;
+    --clay:#A8562E;
+    --clay-soft:#F1DFD3;
+    --court:#2F6F5E;
+    --court-deep:#1F4A3D;
+    --p-aufreiter:#3B6E8C;
+    --p-priller:#A8562E;
+    --p-grandl:#4B7A3D;
+    --p-praska:#B4883B;
+    --p-schimek:#2F6F5E;
+    --shadow: 0 10px 28px rgba(30,42,34,0.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--chalk);
+    background-image:
+      radial-gradient(circle at 100% 0%, rgba(199,217,52,0.08), transparent 40%),
+      radial-gradient(circle at 0% 30%, rgba(47,111,94,0.06), transparent 45%);
+    color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:48px;
+  }
+  .display{font-family:'Barlow Condensed','Inter',sans-serif;}
+
+  header.top{
+    position:sticky; top:0; z-index:20;
+    background:rgba(245,247,241,0.92);
+    backdrop-filter:blur(6px);
+    padding:16px 18px 12px;
+    border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:10px;
+  }
+  header.top .emblem{width:30px;height:30px;flex-shrink:0;}
+  header.top .titles{flex:1; min-width:0;}
+  header.top h1{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:800;
+    font-size:24px;
+    margin:0;
+    letter-spacing:0.2px;
+    line-height:1.1;
+  }
+  header.top p{
+    margin:1px 0 0;
+    font-size:12.5px;
+    color:var(--ink-soft);
+  }
+  .refresh-btn{
+    border:1px solid var(--line);
+    background:var(--paper);
+    border-radius:20px;
+    width:36px;height:36px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--ink-soft);
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .refresh-btn svg{width:16px;height:16px;}
+  .refresh-btn.spin svg{animation:spin 0.7s linear;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  main{max-width:520px; margin:0 auto; padding:0 16px;}
+
+  /* ---- hero: match ticket ---- */
+  .hero{
+    margin-top:18px;
+    border-radius:20px;
+    box-shadow:var(--shadow);
+    overflow:visible;
+    animation:heroIn .5s ease both;
+  }
+  @keyframes heroIn{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
+  .hero-top{
+    background:linear-gradient(155deg, var(--court) 0%, var(--court-deep) 100%);
+    color:var(--chalk);
+    border-radius:20px 20px 0 0;
+    padding:20px 20px 24px;
+    position:relative;
+  }
+  .hero-top .label{font-size:13px; color:rgba(245,247,241,0.75); margin:0 0 6px;}
+  .hero-top .date-row{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  .hero-top .date-main{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:800;
+    font-size:29px;
+    line-height:1.05;
+  }
+  .countdown{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;
+    font-size:14px;
+    background:var(--ball);
+    color:var(--ball-ink);
+    padding:5px 13px;
+    border-radius:14px;
+    white-space:nowrap;
+  }
+  .hero-top .meta{font-size:13px; color:rgba(245,247,241,0.8); margin-top:5px;}
+  .holiday-tag{
+    display:inline-block; margin-top:9px;
+    font-size:12.5px; color:var(--clay);
+    background:var(--clay-soft);
+    padding:4px 10px; border-radius:10px;
+  }
+  .holiday-tag.on-dark{
+    color:var(--chalk); background:rgba(245,247,241,0.18);
+  }
+  .perforation{
+    position:relative;
+    height:2px;
+    background-image:repeating-linear-gradient(to right, rgba(30,42,34,0.28) 0 8px, transparent 8px 16px);
+    margin:0 18px;
+  }
+  .perforation::before,.perforation::after{
+    content:""; position:absolute; top:-11px; width:22px; height:22px;
+    border-radius:50%; background:var(--chalk);
+  }
+  .perforation::before{left:-29px;}
+  .perforation::after{right:-29px;}
+  .hero-bottom{
+    background:var(--paper);
+    border-radius:0 0 20px 20px;
+    padding:20px;
+  }
+  .players-grid{
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:9px;
+  }
+  .chip{
+    border:1px solid var(--line);
+    background:var(--chalk);
+    border-radius:12px;
+    padding:8px 12px 8px 8px;
+    font-size:14.5px;
+    font-weight:600;
+    text-align:left;
+    cursor:pointer;
+    display:flex; align-items:center; gap:9px;
+    min-height:46px;
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+  }
+  .chip:active{transform:scale(0.98);}
+  .avatar{
+    width:26px;height:26px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff; font-size:12px; font-weight:700; flex-shrink:0;
+    font-family:'Inter',sans-serif;
+  }
+  .chip.guest{
+    border-style:dashed;
+    border-color:var(--clay);
+    background:#fff;
+    color:var(--clay);
+  }
+  .chip.guest .avatar{
+    background:transparent; border:1.5px dashed var(--clay); color:var(--clay);
+  }
+  .hint{font-size:12.5px; color:var(--ink-soft); margin:14px 2px 0;}
+  .hero-empty{margin:0; font-size:15px;}
+
+  .segmented{
+    display:flex; margin:22px 0 4px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:4px;
+  }
+  .segmented button{
+    flex:1; border:none; background:transparent;
+    padding:9px 0; font-size:13.5px; font-weight:600;
+    color:var(--ink-soft); border-radius:10px; cursor:pointer;
+    font-family:'Inter',sans-serif;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .segmented button svg{width:15px;height:15px;}
+  .segmented button.active{
+    background:var(--ink); color:var(--chalk);
+  }
+
+  .month-group{margin-top:24px;}
+  .month-title{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:700; font-size:18px;
+    color:var(--court);
+    margin:0 0 4px 2px;
+  }
+  .net-divider{
+    height:5px; margin:0 0 14px 2px;
+    border-top:2px solid var(--line);
+    background-image:repeating-linear-gradient(to right, var(--line) 0 2px, transparent 2px 9px);
+    background-position:top left; background-repeat:repeat-x; background-size:9px 5px;
+  }
+  .timeline{position:relative; padding-left:16px;}
+  .timeline::before{
+    content:""; position:absolute; left:4px; top:4px; bottom:4px;
+    width:1.5px; background:var(--line);
+  }
+  .row{
+    position:relative;
+    margin-bottom:10px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:12px 14px;
+  }
+  .row::before{
+    content:""; position:absolute; left:-16px; top:19px;
+    width:7px; height:7px; border-radius:50%;
+    background:var(--court);
+    box-shadow:0 0 0 3px var(--chalk);
+  }
+  .row.past{opacity:0.5;}
+  .row.past::before{background:var(--ink-soft);}
+  .row .row-date-wrap{display:flex; align-items:center; width:100%; justify-content:space-between; margin-bottom:9px;}
+  .row .row-date{
+    font-size:13.5px; font-weight:700; color:var(--ink);
+    display:flex; align-items:center; gap:8px;
+  }
+  .row .row-date .wk{color:var(--ink-soft); font-weight:500;}
+  .row-players{display:flex; flex-wrap:wrap; gap:6px;}
+  .row-players .chip{
+    padding:5px 10px 5px 5px; font-size:13px; min-height:0;
+  }
+  .row-players .avatar{width:20px;height:20px; font-size:10px;}
+
+  .stats-table{margin-top:16px; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--paper);}
+  .stats-row{
+    display:flex; align-items:center; gap:11px;
+    padding:13px 14px; border-bottom:1px solid var(--line);
+  }
+  .stats-row:last-child{border-bottom:none;}
+  .stats-row .avatar{width:28px;height:28px;font-size:12px;}
+  .stats-name{width:78px; font-weight:600; font-size:14px; flex-shrink:0;}
+  .stats-bar-wrap{flex:1; background:var(--chalk); border-radius:6px; height:8px; overflow:hidden;}
+  .stats-bar{height:100%; border-radius:6px;}
+  .stats-num{width:104px; text-align:right; font-size:12.5px; color:var(--ink-soft); flex-shrink:0;}
+  .stats-note{font-size:12.5px; color:var(--ink-soft); margin:12px 4px 0; line-height:1.55;}
+
+  .reset-link{
+    display:block; text-align:center; margin:24px auto 4px;
+    font-size:13px; color:var(--ink-soft); background:none; border:none;
+    text-decoration:underline; cursor:pointer; font-family:'Inter',sans-serif;
+  }
+
+  /* bottom sheet */
+  .overlay{
+    position:fixed; inset:0; background:rgba(30,42,34,0.38);
+    display:flex; align-items:flex-end; justify-content:center; z-index:50;
+    opacity:0; pointer-events:none; transition:opacity 0.22s ease;
+  }
+  .overlay.open{opacity:1; pointer-events:auto;}
+  .sheet{
+    background:var(--paper);
+    width:100%; max-width:520px;
+    border-radius:22px 22px 0 0;
+    padding:10px 18px 26px;
+    box-shadow:0 -10px 32px rgba(0,0,0,0.2);
+    transform:translateY(100%);
+    transition:transform 0.28s cubic-bezier(.32,.72,0,1);
+  }
+  .overlay.open .sheet{transform:translateY(0);}
+  .drag-handle{width:36px; height:4px; background:var(--line); border-radius:3px; margin:0 auto 14px;}
+  .sheet h3{margin:0 0 4px; font-size:16px;}
+  .sheet .sub{font-size:12.5px; color:var(--ink-soft); margin:0 0 14px;}
+  .sheet-options{display:flex; flex-direction:column; gap:7px;}
+  .sheet-options button{
+    text-align:left; padding:10px 12px; border-radius:12px;
+    border:1px solid var(--line); border-left:4px solid transparent;
+    background:var(--chalk); display:flex; align-items:center; gap:10px;
+    font-size:15px; font-weight:600; font-family:'Inter',sans-serif;
+    cursor:pointer; color:var(--ink);
+  }
+  .sheet-options button.current{
+    border-left-width:4px; font-weight:700;
+  }
+  .guest-input-row{display:none; gap:8px; margin-top:10px;}
+  .guest-input-row.open{display:flex;}
+  .guest-input-row input{
+    flex:1; padding:11px 12px; border-radius:12px;
+    border:1px solid var(--line); font-size:15px; font-family:'Inter',sans-serif;
+  }
+  .guest-input-row button{
+    padding:0 16px; border-radius:12px; border:none;
+    background:var(--ball); color:var(--ball-ink); font-weight:700;
+    cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  .sheet-close{
+    display:block; margin:14px auto 0; background:none; border:none;
+    color:var(--ink-soft); font-size:13px; cursor:pointer; text-decoration:underline;
+  }
+
+  .toast{
+    position:fixed; bottom:18px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:var(--chalk); padding:10px 18px; border-radius:20px;
+    font-size:13px; opacity:0; transition:all 0.25s ease; z-index:60; pointer-events:none;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <svg class="emblem" viewBox="0 0 32 32" fill="none">
+    <circle cx="16" cy="16" r="14" fill="#C7D934"/>
+    <path d="M4 10c5 3 5 9 0 12" stroke="#38430E" stroke-width="1.6" fill="none"/>
+    <path d="M28 10c-5 3-5 9 0 12" stroke="#38430E" stroke-width="1.6" fill="none"/>
+  </svg>
+  <div class="titles">
+    <h1>Donnerstagrunde</h1>
+    <p>TC Kamper · Abo 2026/27 · 17:00–19:00 Uhr</p>
+  </div>
+  <button class="refresh-btn" id="refreshBtn" title="Aktualisieren" aria-label="Aktualisieren">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></svg>
+  </button>
+</header>
+
+<main>
+  <div class="hero" id="hero"></div>
+
+  <div class="segmented">
+    <button id="tabSeason" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      Saison
+    </button>
+    <button id="tabStats">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
+      Statistik
+    </button>
+  </div>
+
+  <div id="seasonView"></div>
+  <div id="statsView" style="display:none;"></div>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <div class="drag-handle"></div>
+    <h3 id="sheetTitle">Spieler ändern</h3>
+    <p class="sub" id="sheetSub"></p>
+    <div class="sheet-options" id="sheetOptions"></div>
+    <div class="guest-input-row" id="guestRow">
+      <input id="guestInput" type="text" placeholder="Name des Gastspielers" maxlength="24">
+      <button id="guestConfirm">Übernehmen</button>
+    </div>
+    <button class="sheet-close" id="sheetClose">Abbrechen</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ====== EINRICHTUNG ======
+  // Hier die eigene, private Firebase-Datenbank-URL eintragen (siehe Anleitung).
+  // Beispiel: "https://donnerstagrunde-default-rtdb.europe-west1.firebasedatabase.app"
+  var FIREBASE_DB_URL = "https://tennis-abo-312a8-default-rtdb.europe-west1.firebasedatabase.app";
+  // ==========================
+
+  function isConfigured(){
+    return FIREBASE_DB_URL.indexOf("DEIN-PROJEKT-ID") === -1;
+  }
+
+  var PLAYERS = ["Aufreiter","Priller","Grandl","Praska","Schimek"];
+  var PLAYER_COLORS = {
+    Aufreiter:"#3B6E8C",
+    Priller:"#A8562E",
+    Grandl:"#4B7A3D",
+    Praska:"#B4883B",
+    Schimek:"#2F6F5E"
+  };
+  var PREIS_PRO_EINSATZ = 1485/104;
+
+  var DEFAULT_SCHEDULE = [
+    {date:"2026-10-08", holiday:false, players:["Aufreiter","Priller","Schimek","Praska"]},
+    {date:"2026-10-15", holiday:false, players:["Priller","Aufreiter","Praska","Schimek"]},
+    {date:"2026-10-22", holiday:false, players:["Priller","Praska","Schimek","Aufreiter"]},
+    {date:"2026-10-29", holiday:false, players:["Praska","Schimek","Aufreiter","Priller"]},
+    {date:"2026-11-05", holiday:false, players:["Schimek","Aufreiter","Priller","Grandl"]},
+    {date:"2026-11-12", holiday:false, players:["Aufreiter","Priller","Grandl","Praska"]},
+    {date:"2026-11-19", holiday:false, players:["Priller","Grandl","Praska","Schimek"]},
+    {date:"2026-11-26", holiday:false, players:["Grandl","Praska","Schimek","Aufreiter"]},
+    {date:"2026-12-03", holiday:false, players:["Praska","Schimek","Aufreiter","Priller"]},
+    {date:"2026-12-10", holiday:false, players:["Schimek","Aufreiter","Priller","Grandl"]},
+    {date:"2026-12-17", holiday:false, players:["Aufreiter","Priller","Grandl","Praska"]},
+    {date:"2026-12-24", holiday:true,  players:["Priller","Grandl","Praska","Schimek"]},
+    {date:"2026-12-31", holiday:true,  players:["Grandl","Praska","Schimek","Aufreiter"]},
+    {date:"2027-01-07", holiday:false, players:["Praska","Schimek","Aufreiter","Priller"]},
+    {date:"2027-01-14", holiday:false, players:["Schimek","Aufreiter","Priller","Grandl"]},
+    {date:"2027-01-21", holiday:false, players:["Aufreiter","Priller","Grandl","Praska"]},
+    {date:"2027-01-28", holiday:false, players:["Priller","Grandl","Praska","Schimek"]},
+    {date:"2027-02-04", holiday:false, players:["Grandl","Praska","Schimek","Aufreiter"]},
+    {date:"2027-02-11", holiday:false, players:["Praska","Schimek","Aufreiter","Priller"]},
+    {date:"2027-02-18", holiday:false, players:["Schimek","Aufreiter","Priller","Grandl"]},
+    {date:"2027-02-25", holiday:false, players:["Aufreiter","Priller","Grandl","Praska"]},
+    {date:"2027-03-04", holiday:false, players:["Priller","Grandl","Praska","Schimek"]},
+    {date:"2027-03-11", holiday:false, players:["Grandl","Praska","Schimek","Aufreiter"]},
+    {date:"2027-03-18", holiday:false, players:["Praska","Schimek","Aufreiter","Priller"]},
+    {date:"2027-03-25", holiday:false, players:["Schimek","Aufreiter","Priller","Grandl"]},
+    {date:"2027-04-01", holiday:false, players:["Aufreiter","Grandl","Schimek","Praska"]}
+  ];
+
+  var schedule = null;
+  var editTarget = null; // {dateIdx, slotIdx}
+
+  var heroEl = document.getElementById("hero");
+  var seasonEl = document.getElementById("seasonView");
+  var statsEl = document.getElementById("statsView");
+  var overlay = document.getElementById("overlay");
+  var sheetOptions = document.getElementById("sheetOptions");
+  var sheetSub = document.getElementById("sheetSub");
+  var guestRow = document.getElementById("guestRow");
+  var guestInput = document.getElementById("guestInput");
+  var toastEl = document.getElementById("toast");
+
+  function pad(n){ return n<10 ? "0"+n : ""+n; }
+  function parseDate(iso){
+    var p = iso.split("-");
+    return new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
+  }
+  function todayMidnight(){
+    var d = new Date();
+    d.setHours(0,0,0,0);
+    return d;
+  }
+  function fmtDDMM(d){ return pad(d.getDate())+"."+pad(d.getMonth()+1); }
+  function fmtDDMMYYYY(d){ return pad(d.getDate())+"."+pad(d.getMonth()+1)+"."+d.getFullYear(); }
+  function weekdayShort(d){ return d.toLocaleDateString("de-AT",{weekday:"short"}); }
+  function weekdayLong(d){ return d.toLocaleDateString("de-AT",{weekday:"long"}); }
+  function monthLabel(d){ return d.toLocaleDateString("de-AT",{month:"long",year:"numeric"}); }
+  function isGuest(name){ return name === "Gast" || (name && name.indexOf("Gast:") === 0); }
+  function initials(name){ return name ? name.charAt(0).toUpperCase() : "?"; }
+
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    setTimeout(function(){ toastEl.classList.remove("show"); }, 1800);
+  }
+
+  async function loadSchedule(){
+    try{
+      var res = await fetch(FIREBASE_DB_URL + "/schedule.json");
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      var data = await res.json();
+      if(data){
+        schedule = data;
+      }else{
+        schedule = DEFAULT_SCHEDULE;
+        await saveSchedule(true);
+      }
+    }catch(e){
+      if(!schedule) schedule = DEFAULT_SCHEDULE;
+      showToast("Keine Verbindung zur Datenbank – bitte Internet prüfen.");
+    }
+  }
+
+  async function saveSchedule(silent){
+    try{
+      var res = await fetch(FIREBASE_DB_URL + "/schedule.json", {
+        method:"PUT",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify(schedule)
+      });
+      if(!res.ok && !silent){ showToast("Speichern fehlgeschlagen – bitte erneut versuchen."); }
+    }catch(e){
+      if(!silent){ showToast("Speichern fehlgeschlagen – bitte Internet prüfen."); }
+    }
+  }
+
+  function findNextIndex(){
+    var today = todayMidnight();
+    for(var i=0;i<schedule.length;i++){
+      if(parseDate(schedule[i].date) >= today) return i;
+    }
+    return -1;
+  }
+
+  function renderChip(name, dateIdx, slotIdx){
+    var guest = isGuest(name);
+    var customName = guest && name.indexOf("Gast:")===0 ? name.slice(5).trim() : "";
+    var label = guest ? (customName || "Gast") : name;
+    var avatarHtml = guest
+      ? '<span class="avatar">?</span>'
+      : '<span class="avatar" style="background:'+(PLAYER_COLORS[name]||"#8A8A8A")+'">'+initials(name)+'</span>';
+    return '<button class="chip'+(guest?' guest':'')+'" data-date-idx="'+dateIdx+'" data-slot-idx="'+slotIdx+'">'
+      + avatarHtml
+      + '<span>'+label+(guest && customName ? ' · Gast' : '')+'</span>'
+      + '</button>';
+  }
+
+  function renderHero(){
+    var idx = findNextIndex();
+    if(idx === -1){
+      heroEl.innerHTML = '<div class="hero-top"><p class="label">Saison abgeschlossen</p>'
+        + '<p class="hero-empty" style="color:var(--chalk);">Für die aktuelle Saison ist kein weiterer Termin eingetragen.</p></div>';
+      return;
+    }
+    var entry = schedule[idx];
+    var d = parseDate(entry.date);
+    var today = todayMidnight();
+    var diffDays = Math.round((d-today)/86400000);
+    var countdownText;
+    if(diffDays === 0) countdownText = "Heute";
+    else if(diffDays === 1) countdownText = "Morgen";
+    else countdownText = "in " + diffDays + " Tagen";
+
+    var html = '<div class="hero-top">'
+      + '<p class="label">Nächster Spieltag</p>'
+      + '<div class="date-row">'
+      + '<span class="date-main">'+weekdayLong(d)+', '+d.getDate()+'. '+d.toLocaleDateString("de-AT",{month:"long"})+'</span>'
+      + '<span class="countdown">'+countdownText+'</span>'
+      + '</div>'
+      + '<p class="meta">17:00–19:00 Uhr · TC Kamper</p>';
+    if(entry.holiday){
+      html += '<span class="holiday-tag on-dark">Feiertag – Termin laut Plan unsicher</span>';
+    }
+    html += '</div>';
+    html += '<div class="perforation"></div>';
+    html += '<div class="hero-bottom"><div class="players-grid">';
+    for(var s=0;s<entry.players.length;s++){
+      html += renderChip(entry.players[s], idx, s);
+    }
+    html += '</div><p class="hint">Namen antippen, um jemanden zu tauschen oder einen Gast einzutragen.</p></div>';
+    heroEl.innerHTML = html;
+  }
+
+  function renderSeason(){
+    var today = todayMidnight();
+    var html = "";
+    var lastMonth = "";
+    for(var i=0;i<schedule.length;i++){
+      var entry = schedule[i];
+      var d = parseDate(entry.date);
+      var mLabel = monthLabel(d);
+      if(mLabel !== lastMonth){
+        if(lastMonth !== "") html += "</div></div>";
+        html += '<div class="month-group"><p class="month-title">'+mLabel+'</p><div class="net-divider"></div><div class="timeline">';
+        lastMonth = mLabel;
+      }
+      var past = d < today;
+      html += '<div class="row'+(past?' past':'')+'">'
+        + '<div class="row-date-wrap">'
+        + '<span class="row-date"><span class="wk">'+weekdayShort(d)+'</span> '+fmtDDMM(d)+'.'+d.getFullYear()+'</span>'
+        + (entry.holiday ? '<span class="holiday-tag">Feiertag</span>' : '')
+        + '</div>'
+        + '<div class="row-players">';
+      for(var s=0;s<entry.players.length;s++){
+        html += renderChip(entry.players[s], i, s);
+      }
+      html += '</div></div>';
+    }
+    html += "</div></div>";
+    seasonEl.innerHTML = html;
+  }
+
+  function renderStats(){
+    var counts = {};
+    PLAYERS.forEach(function(p){ counts[p]=0; });
+    counts["Gast"]=0;
+    schedule.forEach(function(entry){
+      entry.players.forEach(function(name){
+        if(isGuest(name)) counts["Gast"]++;
+        else if(counts.hasOwnProperty(name)) counts[name]++;
+        else counts[name] = (counts[name]||0)+1;
+      });
+    });
+    var max = Math.max.apply(null, PLAYERS.map(function(p){return counts[p];}).concat([1]));
+    var html = '<div class="stats-table">';
+    PLAYERS.forEach(function(p){
+      var c = counts[p]||0;
+      var pct = Math.round((c/max)*100);
+      var kosten = Math.round(c*PREIS_PRO_EINSATZ);
+      var color = PLAYER_COLORS[p];
+      html += '<div class="stats-row">'
+        + '<span class="avatar" style="background:'+color+'">'+initials(p)+'</span>'
+        + '<span class="stats-name">'+p+'</span>'
+        + '<span class="stats-bar-wrap"><span class="stats-bar" style="width:'+pct+'%;background:'+color+';"></span></span>'
+        + '<span class="stats-num">'+c+' Einsätze · €'+kosten+'</span>'
+        + '</div>';
+    });
+    if(counts["Gast"]>0){
+      html += '<div class="stats-row">'
+        + '<span class="avatar" style="background:transparent;border:1.5px dashed var(--clay);color:var(--clay);">?</span>'
+        + '<span class="stats-name">Gast</span>'
+        + '<span class="stats-bar-wrap"><span class="stats-bar" style="width:'+Math.round((counts["Gast"]/max)*100)+'%;background:var(--clay);"></span></span>'
+        + '<span class="stats-num">'+counts["Gast"]+' Einsätze</span>'
+        + '</div>';
+    }
+    html += '</div>';
+    html += '<p class="stats-note">Kostenanteil auf Basis des Aboplans: 26 Wochen, 104 Einsätze gesamt, €1.485,00 Gesamtpreis (≈ €'+PREIS_PRO_EINSATZ.toFixed(2).replace(".",",")+' pro Einsatz). Einsätze eines Gastspielers werden hier nicht auf die fünf Abonnenten verrechnet.</p>';
+    html += '<button class="reset-link" id="resetBtn">Ursprünglichen Plan wiederherstellen</button>';
+    statsEl.innerHTML = html;
+    document.getElementById("resetBtn").addEventListener("click", async function(){
+      if(confirm("Alle Änderungen verwerfen und den ursprünglichen Aboplan wiederherstellen?")){
+        schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
+        await saveSchedule(false);
+        renderAll();
+        showToast("Ursprünglicher Plan wiederhergestellt.");
+      }
+    });
+  }
+
+  function renderAll(){
+    renderHero();
+    renderSeason();
+    renderStats();
+  }
+
+  function openSheet(dateIdx, slotIdx){
+    editTarget = {dateIdx:dateIdx, slotIdx:slotIdx};
+    var entry = schedule[dateIdx];
+    var d = parseDate(entry.date);
+    sheetSub.textContent = weekdayLong(d)+", "+fmtDDMMYYYY(d);
+    var current = entry.players[slotIdx];
+    var optsHtml = "";
+    PLAYERS.forEach(function(p){
+      var isCur = p===current;
+      optsHtml += '<button data-name="'+p+'" class="'+(isCur?"current":"")+'" style="'+(isCur?"border-left-color:"+PLAYER_COLORS[p]+";":"")+'">'
+        + '<span class="avatar" style="background:'+PLAYER_COLORS[p]+'">'+initials(p)+'</span>'
+        + '<span>'+p+'</span></button>';
+    });
+    var guestCur = isGuest(current);
+    optsHtml += '<button data-name="Gast" class="'+(guestCur?"current":"")+'" style="'+(guestCur?"border-left-color:var(--clay);":"")+'">'
+      + '<span class="avatar" style="background:transparent;border:1.5px dashed var(--clay);color:var(--clay);">?</span>'
+      + '<span>Gastspieler</span></button>';
+    sheetOptions.innerHTML = optsHtml;
+    guestRow.classList.remove("open");
+    guestInput.value = isGuest(current) && current.indexOf("Gast:")===0 ? current.slice(5).trim() : "";
+    overlay.classList.add("open");
+  }
+
+  function closeSheet(){
+    overlay.classList.remove("open");
+    editTarget = null;
+  }
+
+  async function applyChoice(name){
+    if(!editTarget) return;
+    schedule[editTarget.dateIdx].players[editTarget.slotIdx] = name;
+    await saveSchedule(false);
+    renderAll();
+    closeSheet();
+    showToast("Gespeichert.");
+  }
+
+  document.addEventListener("click", function(e){
+    var chip = e.target.closest ? e.target.closest(".chip") : null;
+    if(chip && chip.dataset.dateIdx !== undefined){
+      openSheet(parseInt(chip.dataset.dateIdx,10), parseInt(chip.dataset.slotIdx,10));
+    }
+  });
+
+  sheetOptions.addEventListener("click", function(e){
+    var btn = e.target.closest("button");
+    if(!btn) return;
+    var name = btn.getAttribute("data-name");
+    if(name === "Gast"){
+      guestRow.classList.add("open");
+      guestInput.focus();
+    }else{
+      applyChoice(name);
+    }
+  });
+
+  document.getElementById("guestConfirm").addEventListener("click", function(){
+    var val = guestInput.value.trim();
+    applyChoice(val ? "Gast: "+val : "Gast");
+  });
+  guestInput.addEventListener("keydown", function(e){
+    if(e.key === "Enter"){
+      document.getElementById("guestConfirm").click();
+    }
+  });
+
+  document.getElementById("sheetClose").addEventListener("click", closeSheet);
+  overlay.addEventListener("click", function(e){ if(e.target === overlay) closeSheet(); });
+
+  document.getElementById("tabSeason").addEventListener("click", function(){
+    document.getElementById("tabSeason").classList.add("active");
+    document.getElementById("tabStats").classList.remove("active");
+    seasonEl.style.display = "";
+    statsEl.style.display = "none";
+  });
+  document.getElementById("tabStats").addEventListener("click", function(){
+    document.getElementById("tabStats").classList.add("active");
+    document.getElementById("tabSeason").classList.remove("active");
+    statsEl.style.display = "";
+    seasonEl.style.display = "none";
+  });
+
+  document.getElementById("refreshBtn").addEventListener("click", async function(){
+    var btn = this;
+    btn.classList.add("spin");
+    await loadSchedule();
+    renderAll();
+    setTimeout(function(){ btn.classList.remove("spin"); }, 400);
+  });
+
+  setInterval(async function(){
+    if(!isConfigured()) return;
+    if(overlay.classList.contains("open")) return;
+    await loadSchedule();
+    renderAll();
+  }, 12000);
+
+  (async function init(){
+    if(!isConfigured()){
+      heroEl.innerHTML = '<div class="hero-top"><p class="label">Einrichtung nötig</p>'
+        + '<p class="hero-empty" style="color:var(--chalk);">Bitte zuerst die eigene Datenbank-URL im Code eintragen (Variable FIREBASE_DB_URL, siehe Anleitung).</p></div>';
+      return;
+    }
+    await loadSchedule();
+    renderAll();
+  })();
+})();
+</script>
+</body>
+</html>
