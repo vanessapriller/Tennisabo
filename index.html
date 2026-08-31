@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Donnerstagrunde TC Kamper</title>
+<title>Tennisabo TC Kamper</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -19,24 +19,35 @@
     --clay-soft:#F1DFD3;
     --court:#2F6F5E;
     --court-deep:#1F4A3D;
-    --p-aufreiter:#3B6E8C;
-    --p-priller:#A8562E;
-    --p-grandl:#4B7A3D;
-    --p-praska:#B4883B;
-    --p-schimek:#2F6F5E;
+    --p-aufreiter:#2F6FA8;
+    --p-priller:#C4432B;
+    --p-grandl:#7A4E9E;
+    --p-praska:#C99A2E;
+    --p-schimek:#1E7A6E;
     --shadow: 0 10px 28px rgba(30,42,34,0.12);
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
     background:var(--chalk);
-    background-image:
-      radial-gradient(circle at 100% 0%, rgba(199,217,52,0.08), transparent 40%),
-      radial-gradient(circle at 0% 30%, rgba(47,111,94,0.06), transparent 45%);
     color:var(--ink);
     font-family:'Inter',system-ui,-apple-system,sans-serif;
     -webkit-font-smoothing:antialiased;
     padding-bottom:48px;
+  }
+  #courtBg{
+    position:fixed; inset:-60px;
+    pointer-events:none;
+    filter:blur(26px) saturate(1.15);
+    transform:scale(1.1);
+    z-index:-2;
+  }
+  #courtBg svg{width:100%; height:100%; display:block;}
+  #courtBgOverlay{
+    position:fixed; inset:0;
+    pointer-events:none;
+    background:rgba(245,247,241,0.8);
+    z-index:-1;
   }
   .display{font-family:'Barlow Condensed','Inter',sans-serif;}
 
@@ -89,12 +100,26 @@
   }
   @keyframes heroIn{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
   .hero-top{
-    background:linear-gradient(155deg, var(--court) 0%, var(--court-deep) 100%);
     color:var(--chalk);
     border-radius:20px 20px 0 0;
     padding:20px 20px 24px;
     position:relative;
+    overflow:hidden;
+    background:var(--court-deep);
   }
+  .hero-photo{
+    position:absolute; inset:-24px;
+    background-image:url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgNDAwIDYwMCIgcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgc2xpY2UiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGRlZnM+CiAgICA8bGluZWFyR3JhZGllbnQgaWQ9InNreUdyYWQiIHgxPSIwIiB5MT0iMCIgeDI9IjAiIHkyPSIxIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzE0MUYyNiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjQ1JSIgc3RvcC1jb2xvcj0iIzFCM0EzMiIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMyRjZGNUUiLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9Imdsb3ciIGN4PSI1MCUiIGN5PSI1MCUiIHI9IjUwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNGRkY2RDgiIHN0b3Atb3BhY2l0eT0iMC45Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIIHN0b3AtY29sb3I9IiNGRkY2RDgiIHN0b3Atb3BhY2l0eT0iMCIvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjQwMCIgaGVpZ2h0PSI2MDAiIGZpbGw9InVybCgjc2t5R3JhZCkiLz4KICA8Y2lyY2xlIGN4PSI1NSIgY3k9Ijg1IiByPSIxMzAiIGZpbGw9InVybCgjZ2xvdykiLz4KICA8Y2lyY2xlIGN4PSIzNTAiIGN5PSI1NSIgcj0iMTUwIiBmaWxsPSJ1cmwoI2dsb3cpIi8+CiAgPHBhdGggZD0iTTAsMTUwIFEyMDAsMTA4IDQwMCwxNTAgTDQwMCwxODIgUTIwMCwxNDYgMCwxODIgWiIgZmlsbD0iIzBFMUExNyIgb3BhY2l0eT0iMC41NSIvPgogIDxwb2x5Z29uIHBvaW50cz0iNzAsNjAwIDMzMCw2MDAgMjYwLDMwMCAxNDAsMzAwIiBmaWxsPSIjM0I4MDY4IiBvcGFjaXR5PSIwLjkiLz4KICA8cG9seWdvbiBwb2ludHM9IjcwLDYwMCAzMzAsNjAwIDI2MCwzMDAgMTQwLDMwMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRUFGMkU5IiBzdHJva2Utd2lkdGg9IjMiIG9wYWNpdHk9IjAuNSIvPgogIDxsaW5lIHgxPSIyMDAiIHkxPSI2MDAiIHgyPSIyMDAiIHkyPSIzMDAiIHN0cm9rZT0iI0VBRjJFOSIgc3Ryb2tlLXdpZHRoPSIyIiBvcGFjaXR5PSIwLjQiLz4KICA8bGluZSB4MT0iMTEwIiB5MT0iNDMwIiB4Mj0iMjkwIiB5Mj0iNDMwIiBzdHJva2U9IiNFQUYyRTkiIHN0cm9rZS13aWR0aD0iMiIgb3BhY2l0eT0iMC40Ii8+CiAgPGxpbmUgeDE9IjEyMCIgeTE9IjMwMCIgeDI9IjI4MCIgeTI9IjMwMCIgc3Ryb2tlPSIjRjVGN0YxIiBzdHJva2Utd2lkdGg9IjQiIG9wYWNpdHk9IjAuNTUiLz4KPC9zdmc+");
+    background-size:cover;
+    background-position:50% 22%;
+    filter:blur(9px) saturate(1.3) brightness(1.05);
+    transform:scale(1.15);
+  }
+  .hero-tint{
+    position:absolute; inset:0;
+    background:linear-gradient(155deg, rgba(47,111,94,0.80) 0%, rgba(19,43,36,0.88) 100%);
+  }
+  .hero-content{position:relative; z-index:1;}
   .hero-top .label{font-size:13px; color:rgba(245,247,241,0.75); margin:0 0 6px;}
   .hero-top .date-row{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;}
   .hero-top .date-main{
@@ -236,6 +261,10 @@
     display:flex; align-items:center; gap:8px;
   }
   .row .row-date .wk{color:var(--ink-soft); font-weight:500;}
+  .date-edit-input{
+    border:none; background:transparent; font:inherit; font-weight:700;
+    color:var(--ink); padding:0; cursor:pointer; font-family:'Inter',sans-serif;
+  }
   .row-players{display:flex; flex-wrap:wrap; gap:6px;}
   .row-players .chip{
     padding:5px 10px 5px 5px; font-size:13px; min-height:0;
@@ -260,6 +289,42 @@
     font-size:13px; color:var(--ink-soft); background:none; border:none;
     text-decoration:underline; cursor:pointer; font-family:'Inter',sans-serif;
   }
+
+  /* ---- Ergebnisse ---- */
+  .bilanz-table{margin-top:16px; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--paper);}
+  .bilanz-row{display:flex; align-items:center; gap:11px; padding:12px 14px; border-bottom:1px solid var(--line);}
+  .bilanz-row:last-child{border-bottom:none;}
+  .bilanz-row .avatar{width:26px;height:26px;font-size:11px;}
+  .bilanz-name{width:74px; font-weight:600; font-size:13.5px; flex-shrink:0;}
+  .bilanz-bar-wrap{flex:1; display:flex; height:8px; border-radius:6px; overflow:hidden; background:var(--chalk);}
+  .bilanz-bar-win{height:100%; background:var(--court);}
+  .bilanz-bar-loss{height:100%; background:var(--clay-soft);}
+  .bilanz-num{width:88px; text-align:right; font-size:12px; color:var(--ink-soft); flex-shrink:0;}
+  .match-row{position:relative; margin-bottom:10px; background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:12px 14px;}
+  .match-teams{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
+  .team-selects{flex:1; display:flex; flex-direction:column; gap:6px;}
+  .team-select{
+    width:100%; padding:7px 8px; border-radius:9px; border:1px solid var(--line);
+    background:var(--chalk); font-size:13px; font-family:'Inter',sans-serif; color:var(--ink);
+  }
+  .vs-label{font-size:11.5px; color:var(--ink-soft); font-weight:700; flex-shrink:0; padding:0 2px;}
+  .sets-row{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .sets-row span.set-label{width:52px; font-size:12px; color:var(--ink-soft); flex-shrink:0;}
+  .sets-row input{
+    width:44px; padding:6px 4px; text-align:center; border-radius:8px;
+    border:1px solid var(--line); font-size:14px; font-family:'Inter',sans-serif;
+  }
+  .sets-row .colon{color:var(--ink-soft); font-weight:700;}
+  .add-set-btn{
+    background:none; border:none; color:var(--court); font-size:12.5px;
+    text-decoration:underline; cursor:pointer; padding:2px 0; font-family:'Inter',sans-serif;
+  }
+  .status-badge{
+    display:inline-block; margin-top:6px; font-size:12.5px; font-weight:600;
+    padding:4px 10px; border-radius:10px; background:var(--chalk); color:var(--ink-soft);
+  }
+  .status-badge.decided{background:var(--court); color:var(--chalk);}
+  .status-badge.tied{background:var(--clay-soft); color:var(--clay);}
 
   /* bottom sheet */
   .overlay{
@@ -318,6 +383,32 @@
 </head>
 <body>
 
+<div id="courtBg">
+  <svg viewBox="0 0 400 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#141F26"/>
+        <stop offset="45%" stop-color="#1B3A32"/>
+        <stop offset="100%" stop-color="#2F6F5E"/>
+      </linearGradient>
+      <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#FFF6D8" stop-opacity="0.9"/>
+        <stop offset="100%" stop-color="#FFF6D8" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="400" height="600" fill="url(#skyGrad)"/>
+    <circle cx="55" cy="85" r="130" fill="url(#glow)"/>
+    <circle cx="350" cy="55" r="150" fill="url(#glow)"/>
+    <path d="M0,150 Q200,108 400,150 L400,182 Q200,146 0,182 Z" fill="#0E1A17" opacity="0.55"/>
+    <polygon points="70,600 330,600 260,300 140,300" fill="#3B8068" opacity="0.9"/>
+    <polygon points="70,600 330,600 260,300 140,300" fill="none" stroke="#EAF2E9" stroke-width="3" opacity="0.5"/>
+    <line x1="200" y1="600" x2="200" y2="300" stroke="#EAF2E9" stroke-width="2" opacity="0.4"/>
+    <line x1="110" y1="430" x2="290" y2="430" stroke="#EAF2E9" stroke-width="2" opacity="0.4"/>
+    <line x1="120" y1="300" x2="280" y2="300" stroke="#F5F7F1" stroke-width="4" opacity="0.55"/>
+  </svg>
+</div>
+<div id="courtBgOverlay"></div>
+
 <header class="top">
   <svg class="emblem" viewBox="0 0 32 32" fill="none">
     <circle cx="16" cy="16" r="14" fill="#C7D934"/>
@@ -325,7 +416,7 @@
     <path d="M28 10c-5 3-5 9 0 12" stroke="#38430E" stroke-width="1.6" fill="none"/>
   </svg>
   <div class="titles">
-    <h1>Donnerstagrunde</h1>
+    <h1>Tennisabo</h1>
     <p>TC Kamper · Abo 2026/27 · 17:00–19:00 Uhr</p>
   </div>
   <button class="refresh-btn" id="refreshBtn" title="Aktualisieren" aria-label="Aktualisieren">
@@ -341,6 +432,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
       Saison
     </button>
+    <button id="tabResults">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M6 3h12v4a6 6 0 0 1-12 0V3ZM6 5H3v2a4 4 0 0 0 3 3.87M18 5h3v2a4 4 0 0 1-3 3.87"/></svg>
+      Ergebnisse
+    </button>
     <button id="tabStats">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
       Statistik
@@ -348,6 +443,7 @@
   </div>
 
   <div id="seasonView"></div>
+  <div id="resultsView" style="display:none;"></div>
   <div id="statsView" style="display:none;"></div>
 </main>
 
@@ -373,7 +469,6 @@
 
   // ====== EINRICHTUNG ======
   // Hier die eigene, private Firebase-Datenbank-URL eintragen (siehe Anleitung).
-  // Beispiel: "https://donnerstagrunde-default-rtdb.europe-west1.firebasedatabase.app"
   var FIREBASE_DB_URL = "https://tennis-abo-312a8-default-rtdb.europe-west1.firebasedatabase.app";
   // ==========================
 
@@ -383,11 +478,11 @@
 
   var PLAYERS = ["Aufreiter","Priller","Grandl","Praska","Schimek"];
   var PLAYER_COLORS = {
-    Aufreiter:"#3B6E8C",
-    Priller:"#A8562E",
-    Grandl:"#4B7A3D",
-    Praska:"#B4883B",
-    Schimek:"#2F6F5E"
+    Aufreiter:"#2F6FA8",
+    Priller:"#C4432B",
+    Grandl:"#7A4E9E",
+    Praska:"#C99A2E",
+    Schimek:"#1E7A6E"
   };
   var PREIS_PRO_EINSATZ = 1485/104;
 
@@ -421,10 +516,11 @@
   ];
 
   var schedule = null;
-  var editTarget = null; // {dateIdx, slotIdx}
+  var editTarget = null;
 
   var heroEl = document.getElementById("hero");
   var seasonEl = document.getElementById("seasonView");
+  var resultsEl = document.getElementById("resultsView");
   var statsEl = document.getElementById("statsView");
   var overlay = document.getElementById("overlay");
   var sheetOptions = document.getElementById("sheetOptions");
@@ -450,6 +546,54 @@
   function monthLabel(d){ return d.toLocaleDateString("de-AT",{month:"long",year:"numeric"}); }
   function isGuest(name){ return name === "Gast" || (name && name.indexOf("Gast:") === 0); }
   function initials(name){ return name ? name.charAt(0).toUpperCase() : "?"; }
+  function playerLabel(name){
+    if(!isGuest(name)) return name;
+    var custom = name.indexOf("Gast:")===0 ? name.slice(5).trim() : "";
+    return custom ? custom+" (Gast)" : "Gast";
+  }
+
+  var expandedThirdSet = {};
+
+  function normalizeResult(entry){
+    if(!entry.result){
+      entry.result = {
+        teamA:[entry.players[0], entry.players[1]],
+        sets:[{a:null,b:null},{a:null,b:null},{a:null,b:null}]
+      };
+    }else{
+      var valid = entry.result.teamA.filter(function(n){ return entry.players.indexOf(n) !== -1; });
+      for(var i=0;i<entry.players.length && valid.length<2;i++){
+        if(valid.indexOf(entry.players[i]) === -1) valid.push(entry.players[i]);
+      }
+      entry.result.teamA = valid.slice(0,2);
+      if(!entry.result.sets) entry.result.sets = [{a:null,b:null},{a:null,b:null},{a:null,b:null}];
+      while(entry.result.sets.length<3) entry.result.sets.push({a:null,b:null});
+    }
+    return entry.result;
+  }
+
+  function getTeamB(entry){
+    var res = normalizeResult(entry);
+    return entry.players.filter(function(p){ return res.teamA.indexOf(p) === -1; });
+  }
+
+  function computeMatchStatus(entry){
+    var res = normalizeResult(entry);
+    var setsA=0, setsB=0, anyEntered=false;
+    res.sets.forEach(function(s){
+      if(s.a!=null && s.b!=null){
+        anyEntered = true;
+        if(s.a>s.b) setsA++; else if(s.b>s.a) setsB++;
+      }
+    });
+    var status = "offen";
+    if(anyEntered){
+      if(setsA>setsB) status="A";
+      else if(setsB>setsA) status="B";
+      else status="unentschieden";
+    }
+    return {status:status, setsA:setsA, setsB:setsB};
+  }
 
   function showToast(msg){
     toastEl.textContent = msg;
@@ -511,8 +655,8 @@
   function renderHero(){
     var idx = findNextIndex();
     if(idx === -1){
-      heroEl.innerHTML = '<div class="hero-top"><p class="label">Saison abgeschlossen</p>'
-        + '<p class="hero-empty" style="color:var(--chalk);">Für die aktuelle Saison ist kein weiterer Termin eingetragen.</p></div>';
+      heroEl.innerHTML = '<div class="hero-top"><div class="hero-photo"></div><div class="hero-tint"></div><div class="hero-content"><p class="label">Saison abgeschlossen</p>'
+        + '<p class="hero-empty" style="color:var(--chalk);">Für die aktuelle Saison ist kein weiterer Termin eingetragen.</p></div></div>';
       return;
     }
     var entry = schedule[idx];
@@ -524,7 +668,7 @@
     else if(diffDays === 1) countdownText = "Morgen";
     else countdownText = "in " + diffDays + " Tagen";
 
-    var html = '<div class="hero-top">'
+    var html = '<div class="hero-top"><div class="hero-photo"></div><div class="hero-tint"></div><div class="hero-content">'
       + '<p class="label">Nächster Spieltag</p>'
       + '<div class="date-row">'
       + '<span class="date-main">'+weekdayLong(d)+', '+d.getDate()+'. '+d.toLocaleDateString("de-AT",{month:"long"})+'</span>'
@@ -534,7 +678,7 @@
     if(entry.holiday){
       html += '<span class="holiday-tag on-dark">Feiertag – Termin laut Plan unsicher</span>';
     }
-    html += '</div>';
+    html += '</div></div>';
     html += '<div class="perforation"></div>';
     html += '<div class="hero-bottom"><div class="players-grid">';
     for(var s=0;s<entry.players.length;s++){
@@ -546,7 +690,7 @@
 
   function renderSeason(){
     var today = todayMidnight();
-    var html = "";
+    var html = '<p class="hint" style="margin:14px 2px 4px;">Datum antippen, um einen Termin zu verschieben.</p>';
     var lastMonth = "";
     for(var i=0;i<schedule.length;i++){
       var entry = schedule[i];
@@ -560,7 +704,7 @@
       var past = d < today;
       html += '<div class="row'+(past?' past':'')+'">'
         + '<div class="row-date-wrap">'
-        + '<span class="row-date"><span class="wk">'+weekdayShort(d)+'</span> '+fmtDDMM(d)+'.'+d.getFullYear()+'</span>'
+        + '<span class="row-date"><span class="wk">'+weekdayShort(d)+'</span> <input type="date" class="date-edit-input" data-date-idx="'+i+'" value="'+entry.date+'"></span>'
         + (entry.holiday ? '<span class="holiday-tag">Feiertag</span>' : '')
         + '</div>'
         + '<div class="row-players">';
@@ -571,6 +715,104 @@
     }
     html += "</div></div>";
     seasonEl.innerHTML = html;
+  }
+
+  function renderResults(){
+    var tally = {};
+    PLAYERS.forEach(function(p){ tally[p] = {w:0,l:0}; });
+    schedule.forEach(function(entry){
+      var st = computeMatchStatus(entry);
+      if(st.status!=="A" && st.status!=="B") return;
+      var res = normalizeResult(entry);
+      var winners = st.status==="A" ? res.teamA : getTeamB(entry);
+      var losers = st.status==="A" ? getTeamB(entry) : res.teamA;
+      winners.forEach(function(n){ if(tally[n]) tally[n].w++; });
+      losers.forEach(function(n){ if(tally[n]) tally[n].l++; });
+    });
+    var maxTotal = Math.max.apply(null, PLAYERS.map(function(p){return tally[p].w+tally[p].l;}).concat([1]));
+    var html = '<div class="bilanz-table">';
+    PLAYERS.forEach(function(p){
+      var t = tally[p];
+      var total = t.w+t.l;
+      var winPct = total>0 ? Math.round((t.w/total)*100) : 0;
+      var barScale = total>0 ? (total/maxTotal)*100 : 0;
+      html += '<div class="bilanz-row">'
+        + '<span class="avatar" style="background:'+PLAYER_COLORS[p]+'">'+initials(p)+'</span>'
+        + '<span class="bilanz-name">'+p+'</span>'
+        + '<span class="bilanz-bar-wrap"><span class="bilanz-bar-win" style="width:'+(barScale*(winPct/100))+'%"></span><span class="bilanz-bar-loss" style="width:'+(barScale*(1-winPct/100))+'%"></span></span>'
+        + '<span class="bilanz-num">'+t.w+' S · '+t.l+' N</span>'
+        + '</div>';
+    });
+    html += '</div>';
+    html += '<p class="stats-note">Sieg oder Niederlage zählt für alle Spieler eines Teams, sobald ein Spiel entschieden ist. Ein Gastspieler taucht in dieser Bilanz nicht auf, sein Teampartner schon.</p>';
+
+    var today = todayMidnight();
+    var lastMonth = "";
+    html += '<div id="matchList">';
+    for(var i=0;i<schedule.length;i++){
+      var entry = schedule[i];
+      var d = parseDate(entry.date);
+      var mLabel = monthLabel(d);
+      if(mLabel !== lastMonth){
+        if(lastMonth !== "") html += "</div></div>";
+        html += '<div class="month-group"><p class="month-title">'+mLabel+'</p><div class="net-divider"></div><div class="timeline">';
+        lastMonth = mLabel;
+      }
+      var res = normalizeResult(entry);
+      var teamB = getTeamB(entry);
+      var st = computeMatchStatus(entry);
+      var showThird = expandedThirdSet[i] || (res.sets[2].a!=null || res.sets[2].b!=null);
+      var past = d < today;
+
+      html += '<div class="row match-row'+(past?' past':'')+'" data-date-idx="'+i+'">'
+        + '<div class="row-date-wrap">'
+        + '<span class="row-date"><span class="wk">'+weekdayShort(d)+'</span> '+fmtDDMM(d)+'.'+d.getFullYear()+'</span>'
+        + (entry.holiday ? '<span class="holiday-tag">Feiertag</span>' : '')
+        + '</div>';
+
+      html += '<div class="match-teams">'
+        + '<div class="team-selects">'
+        + buildTeamSelect(i, 0, entry.players, res.teamA[0])
+        + buildTeamSelect(i, 1, entry.players, res.teamA[1])
+        + '</div>'
+        + '<span class="vs-label">gegen</span>'
+        + '<div class="team-selects">'
+        + '<span class="team-select" style="background:transparent;border-color:transparent;padding-top:7px;">'+playerLabel(teamB[0])+'</span>'
+        + '<span class="team-select" style="background:transparent;border-color:transparent;padding-top:7px;">'+playerLabel(teamB[1])+'</span>'
+        + '</div>'
+        + '</div>';
+
+      for(var s=0;s<(showThird?3:2);s++){
+        html += '<div class="sets-row">'
+          + '<span class="set-label">Satz '+(s+1)+'</span>'
+          + '<input type="number" inputmode="numeric" min="0" max="30" data-date-idx="'+i+'" data-set-idx="'+s+'" data-side="a" value="'+(res.sets[s].a!=null?res.sets[s].a:'')+'">'
+          + '<span class="colon">:</span>'
+          + '<input type="number" inputmode="numeric" min="0" max="30" data-date-idx="'+i+'" data-set-idx="'+s+'" data-side="b" value="'+(res.sets[s].b!=null?res.sets[s].b:'')+'">'
+          + '</div>';
+      }
+      if(!showThird){
+        html += '<button class="add-set-btn" data-expand-idx="'+i+'">+ 3. Satz</button>';
+      }
+
+      var badgeClass = st.status==="A"||st.status==="B" ? "decided" : (st.status==="unentschieden" ? "tied" : "");
+      var badgeText;
+      if(st.status==="A") badgeText = playerLabel(res.teamA[0])+' & '+playerLabel(res.teamA[1])+' gewinnen ('+st.setsA+':'+st.setsB+')';
+      else if(st.status==="B") badgeText = playerLabel(teamB[0])+' & '+playerLabel(teamB[1])+' gewinnen ('+st.setsB+':'+st.setsA+')';
+      else if(st.status==="unentschieden") badgeText = 'Unentschieden nach '+ (st.setsA+st.setsB) +' Sätzen';
+      else badgeText = 'Ergebnis noch offen';
+      html += '<span class="status-badge '+badgeClass+'">'+badgeText+'</span>';
+
+      html += '</div>';
+    }
+    html += "</div></div>";
+    resultsEl.innerHTML = html;
+  }
+
+  function buildTeamSelect(dateIdx, slotIdx, players, selected){
+    var opts = players.map(function(p){
+      return '<option value="'+p.replace(/"/g,'&quot;')+'"'+(p===selected?' selected':'')+'>'+playerLabel(p)+'</option>';
+    }).join("");
+    return '<select class="team-select" data-date-idx="'+dateIdx+'" data-slot-idx="'+slotIdx+'">'+opts+'</select>';
   }
 
   function renderStats(){
@@ -623,6 +865,7 @@
   function renderAll(){
     renderHero();
     renderSeason();
+    renderResults();
     renderStats();
   }
 
@@ -663,6 +906,20 @@
     showToast("Gespeichert.");
   }
 
+  document.addEventListener("change", async function(e){
+    if(e.target.classList && e.target.classList.contains("date-edit-input")){
+      var idx = parseInt(e.target.getAttribute("data-date-idx"),10);
+      var newDate = e.target.value;
+      if(newDate && schedule[idx] && newDate !== schedule[idx].date){
+        schedule[idx].date = newDate;
+        schedule.sort(function(a,b){ return parseDate(a.date) - parseDate(b.date); });
+        await saveSchedule(false);
+        renderAll();
+        showToast("Termin verschoben auf "+fmtDDMMYYYY(parseDate(newDate))+".");
+      }
+    }
+  });
+
   document.addEventListener("click", function(e){
     var chip = e.target.closest ? e.target.closest(".chip") : null;
     if(chip && chip.dataset.dateIdx !== undefined){
@@ -695,17 +952,67 @@
   document.getElementById("sheetClose").addEventListener("click", closeSheet);
   overlay.addEventListener("click", function(e){ if(e.target === overlay) closeSheet(); });
 
+  resultsEl.addEventListener("change", async function(e){
+    var t = e.target;
+    if(t.classList.contains("team-select")){
+      var dateIdx = parseInt(t.getAttribute("data-date-idx"),10);
+      var slotIdx = parseInt(t.getAttribute("data-slot-idx"),10);
+      var entry = schedule[dateIdx];
+      var res = normalizeResult(entry);
+      var other = slotIdx===0?1:0;
+      var newVal = t.value;
+      if(res.teamA[other] === newVal){
+        res.teamA[other] = res.teamA[slotIdx];
+      }
+      res.teamA[slotIdx] = newVal;
+      await saveSchedule(false);
+      renderResults();
+    }else if(t.tagName === "INPUT" && t.getAttribute("data-set-idx") !== null){
+      var dIdx = parseInt(t.getAttribute("data-date-idx"),10);
+      var sIdx = parseInt(t.getAttribute("data-set-idx"),10);
+      var side = t.getAttribute("data-side");
+      var entry2 = schedule[dIdx];
+      var res2 = normalizeResult(entry2);
+      var raw = t.value.trim();
+      var num = raw === "" ? null : parseInt(raw,10);
+      if(num !== null && isNaN(num)) num = null;
+      res2.sets[sIdx][side] = num;
+      await saveSchedule(false);
+      renderResults();
+    }
+  });
+
+  resultsEl.addEventListener("click", function(e){
+    var btn = e.target.closest ? e.target.closest("[data-expand-idx]") : null;
+    if(btn){
+      expandedThirdSet[parseInt(btn.getAttribute("data-expand-idx"),10)] = true;
+      renderResults();
+    }
+  });
+
   document.getElementById("tabSeason").addEventListener("click", function(){
     document.getElementById("tabSeason").classList.add("active");
+    document.getElementById("tabResults").classList.remove("active");
     document.getElementById("tabStats").classList.remove("active");
     seasonEl.style.display = "";
+    resultsEl.style.display = "none";
+    statsEl.style.display = "none";
+  });
+  document.getElementById("tabResults").addEventListener("click", function(){
+    document.getElementById("tabResults").classList.add("active");
+    document.getElementById("tabSeason").classList.remove("active");
+    document.getElementById("tabStats").classList.remove("active");
+    resultsEl.style.display = "";
+    seasonEl.style.display = "none";
     statsEl.style.display = "none";
   });
   document.getElementById("tabStats").addEventListener("click", function(){
     document.getElementById("tabStats").classList.add("active");
     document.getElementById("tabSeason").classList.remove("active");
+    document.getElementById("tabResults").classList.remove("active");
     statsEl.style.display = "";
     seasonEl.style.display = "none";
+    resultsEl.style.display = "none";
   });
 
   document.getElementById("refreshBtn").addEventListener("click", async function(){
