@@ -284,7 +284,7 @@
   .stats-num{width:104px; text-align:right; font-size:12.5px; color:var(--ink-soft); flex-shrink:0;}
   .stats-note{font-size:12.5px; color:var(--ink-soft); margin:12px 4px 0; line-height:1.55;}
 
-  /* ---- Cola-Rum-Runde ---- */
+  /* ---- Colarum-Konto ---- */
   .colarum-info{flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;}
   .colarum-meta{font-size:11.5px; color:var(--ink-soft);}
   .colarum-add{
@@ -314,6 +314,35 @@
   .log-del{
     border:none; background:none; color:var(--ink-soft); font-size:20px; line-height:1;
     cursor:pointer; padding:0 4px; font-family:'Inter',sans-serif;
+  }
+
+  /* ---- Einspringer und Terminänderungen ---- */
+  .chip-text{display:flex; flex-direction:column; line-height:1.2; min-width:0;}
+  .chip-sub{font-size:11px; font-weight:500; color:var(--ink-soft);}
+  .chip.guest .chip-sub{color:var(--clay); opacity:0.85;}
+  .row-players .chip-sub{font-size:10.5px;}
+  .tag-group{display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end;}
+  .tag-group .holiday-tag{margin-top:0;}
+  .moved-tag{
+    display:inline-block; font-size:12px; color:var(--court);
+    background:#E3EEE9; padding:3px 9px; border-radius:10px;
+  }
+  .change-log{
+    display:flex; align-items:center; gap:10px; padding:9px 12px;
+    background:var(--paper); border:1px solid var(--line); border-radius:12px; margin-bottom:6px;
+  }
+  .change-log .avatar{width:24px; height:24px; font-size:10px;}
+  .change-log .avatar svg{width:13px; height:13px;}
+  .change-log .log-text{flex:1; min-width:0; font-size:13px; line-height:1.35;}
+  .change-log small{display:block; font-size:11.5px; color:var(--ink-soft);}
+  .reason-row{display:flex; gap:6px; margin:0 0 12px;}
+  .reason-row input{
+    flex:1; min-width:0; padding:9px 11px; border-radius:11px; border:1px solid var(--line);
+    font-size:14px; font-family:'Inter',sans-serif;
+  }
+  .reason-quick{
+    border:1px solid var(--line); background:var(--chalk); border-radius:11px; padding:0 11px;
+    font-size:12.5px; font-weight:600; color:var(--ink-soft); cursor:pointer; font-family:'Inter',sans-serif;
   }
 
   /* ---- Ergebnisse ---- */
@@ -478,6 +507,11 @@
     <div class="drag-handle"></div>
     <h3 id="sheetTitle">Spieler ändern</h3>
     <p class="sub" id="sheetSub"></p>
+    <div class="reason-row" id="reasonRow">
+      <input id="reasonInput" type="text" placeholder="Grund (optional), z. B. krank" maxlength="40">
+      <button type="button" class="reason-quick" data-reason="krank">krank</button>
+      <button type="button" class="reason-quick" data-reason="verhindert">verhindert</button>
+    </div>
     <div class="sheet-options" id="sheetOptions"></div>
     <div class="guest-input-row" id="guestRow">
       <input id="guestInput" type="text" placeholder="Name des Gastspielers" maxlength="24">
@@ -554,6 +588,7 @@
   var sheetSub = document.getElementById("sheetSub");
   var guestRow = document.getElementById("guestRow");
   var guestInput = document.getElementById("guestInput");
+  var reasonInput = document.getElementById("reasonInput");
   var toastEl = document.getElementById("toast");
 
   function pad(n){ return n<10 ? "0"+n : ""+n; }
@@ -572,7 +607,10 @@
   function weekdayLong(d){ return d.toLocaleDateString("de-AT",{weekday:"long"}); }
   function monthLabel(d){ return d.toLocaleDateString("de-AT",{month:"long",year:"numeric"}); }
   function isGuest(name){ return name === "Gast" || (name && name.indexOf("Gast:") === 0); }
-  function initials(name){ return name ? name.charAt(0).toUpperCase() : "?"; }
+  function esc(s){
+    return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+  function initials(name){ return name ? esc(name.charAt(0).toUpperCase()) : "?"; }
   function playerLabel(name){
     if(!isGuest(name)) return name;
     var custom = name.indexOf("Gast:")===0 ? name.slice(5).trim() : "";
@@ -581,10 +619,118 @@
 
   var expandedThirdSet = {};
 
-  // ---- Cola-Rum-Runde (Schläger fallen gelassen) ----
+  // ---- Colarum-Konto (Schläger fallen gelassen) ----
   var colarum = [];
   var colarumBusy = 0;
   var showAllColarum = false;
+
+  // ---- Einspringer und Terminänderungen ----
+  var showAllChanges = false;
+
+  // Merkt sich pro Platz, wer ursprünglich eingeteilt war und warum getauscht wurde.
+  function recordSubstitution(entry, slot, oldName, newName, reason){
+    if(!entry.subs) entry.subs = {};
+    var key = "s"+slot;
+    var rec = entry.subs[key];
+    var from = rec ? rec.from : oldName;
+    if(newName === from){
+      delete entry.subs[key];
+      if(Object.keys(entry.subs).length === 0) delete entry.subs;
+      return;
+    }
+    entry.subs[key] = {from:from, reason:reason || "", ts:Date.now()};
+  }
+
+  // Bereits erfolgte Tauschaktionen (vor Einführung des Protokolls) werden
+  // anhand des ursprünglichen Aboplans erkannt.
+  function backfillSubs(){
+    if(!schedule) return;
+    var byDate = {};
+    DEFAULT_SCHEDULE.forEach(function(e){ byDate[e.date] = e; });
+    schedule.forEach(function(entry){
+      if(!entry || !entry.players) return;
+      var base = byDate[entry.origDate || entry.date];
+      if(!base) return;
+      for(var i=0;i<entry.players.length;i++){
+        var key = "s"+i;
+        if(entry.subs && entry.subs[key]) continue;
+        var orig = base.players[i];
+        if(orig && entry.players[i] !== orig){
+          if(!entry.subs) entry.subs = {};
+          entry.subs[key] = {from:orig, reason:"", ts:0};
+        }
+      }
+    });
+  }
+
+  function renderChangesSection(){
+    var items = [];
+    schedule.forEach(function(entry){
+      if(entry.subs){
+        Object.keys(entry.subs).forEach(function(k){
+          var rec = entry.subs[k];
+          var slot = parseInt(k.slice(1),10);
+          var to = entry.players[slot];
+          if(!rec || to === undefined || to === rec.from) return;
+          items.push({type:"sub", date:entry.date, ts:rec.ts||0, from:rec.from, to:to, reason:rec.reason||""});
+        });
+      }
+      if(entry.origDate && entry.origDate !== entry.date){
+        items.push({type:"move", date:entry.date, ts:entry.movedTs||0, from:entry.origDate});
+      }
+    });
+    items.sort(function(a,b){ return (b.ts - a.ts) || b.date.localeCompare(a.date); });
+
+    var subs = items.filter(function(x){ return x.type === "sub"; });
+    var moves = items.filter(function(x){ return x.type === "move"; });
+    var absent = {};
+    subs.forEach(function(x){ if(PLAYERS.indexOf(x.from) !== -1) absent[x.from] = (absent[x.from]||0)+1; });
+    var absentList = PLAYERS.filter(function(p){ return absent[p]; })
+      .sort(function(a,b){ return absent[b] - absent[a]; })
+      .map(function(p){ return p+" ("+absent[p]+")"; });
+
+    var html = '<div class="month-group"><p class="month-title">Einspringer und Terminänderungen</p><div class="net-divider"></div>'
+      + '<p class="stats-note" style="margin:0 2px 12px;">Hier wird festgehalten, wer für wen eingesprungen ist und welche Termine verschoben wurden.</p>';
+
+    if(items.length === 0){
+      return html + '<p class="stats-note">Noch keine Änderungen. Alle spielen wie geplant.</p></div>';
+    }
+
+    var parts = [];
+    if(subs.length) parts.push(subs.length + ' Einspringer');
+    if(moves.length) parts.push(moves.length + (moves.length === 1 ? ' verschobener Termin' : ' verschobene Termine'));
+    html += '<span class="status-badge tied" style="margin-top:0;">Gesamt: '+parts.join(", ")+'</span>';
+    if(absentList.length){
+      html += '<p class="stats-note" style="margin-top:8px;">Ausgefallen: '+absentList.join(", ")+'.</p>';
+    }
+
+    var shown = showAllChanges ? items : items.slice(0,6);
+    html += '<div style="margin-top:12px;">';
+    shown.forEach(function(x){
+      var dd = x.date ? parseDate(x.date) : null;
+      var dateText = dd ? weekdayShort(dd)+" "+fmtDDMMYYYY(dd) : "";
+      if(x.type === "sub"){
+        html += '<div class="change-log">'
+          + '<span class="avatar" style="background:'+(PLAYER_COLORS[x.from]||"#8A8A8A")+'">'+initials(x.from)+'</span>'
+          + '<span class="log-text"><b>'+esc(playerLabel(x.from))+'</b> ersetzt durch <b>'+esc(playerLabel(x.to))+'</b>'
+          + '<small>'+esc(dateText)+(x.reason ? ' · '+esc(x.reason) : '')+'</small></span>'
+          + '</div>';
+      }else{
+        var od = parseDate(x.from);
+        html += '<div class="change-log">'
+          + '<span class="avatar" style="background:var(--court)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>'
+          + '<span class="log-text"><b>Termin verschoben</b> auf '+esc(dateText)
+          + '<small>ursprünglich '+weekdayShort(od)+' '+fmtDDMMYYYY(od)+'</small></span>'
+          + '</div>';
+      }
+    });
+    html += '</div>';
+    if(items.length > 6){
+      html += '<button class="add-set-btn" id="changesToggle">'+(showAllChanges ? 'Weniger anzeigen' : 'Alle '+items.length+' anzeigen')+'</button>';
+    }
+    html += '</div>';
+    return html;
+  }
 
   function isoToday(){
     var d = new Date();
@@ -739,9 +885,9 @@
         var dateText = e.date ? fmtDDMMYYYY(parseDate(e.date)) : "";
         html += '<div class="colarum-log">'
           + '<span class="avatar" style="background:'+(PLAYER_COLORS[e.player]||"#8A8A8A")+'">'+initials(e.player)+'</span>'
-          + '<span class="log-text"><b>'+e.player+'</b> · '+dateText+'</span>'
-          + '<button class="log-paid'+(e.paid?' is-paid':'')+'" data-colarum-paid="'+e.id+'">'+(e.paid?'bezahlt':'offen')+'</button>'
-          + '<button class="log-del" data-colarum-del="'+e.id+'" aria-label="Eintrag löschen">×</button>'
+          + '<span class="log-text"><b>'+esc(e.player)+'</b> · '+esc(dateText)+'</span>'
+          + '<button class="log-paid'+(e.paid?' is-paid':'')+'" data-colarum-paid="'+esc(e.id)+'">'+(e.paid?'bezahlt':'offen')+'</button>'
+          + '<button class="log-del" data-colarum-del="'+esc(e.id)+'" aria-label="Eintrag löschen">×</button>'
           + '</div>';
       });
       if(colarum.length > 8){
@@ -807,11 +953,12 @@
       if(data){
         schedule = data;
       }else{
-        schedule = DEFAULT_SCHEDULE;
+        schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
         await saveSchedule(true);
       }
+      backfillSubs();
     }catch(e){
-      if(!schedule) schedule = DEFAULT_SCHEDULE;
+      if(!schedule) schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
       showToast("Keine Verbindung zur Datenbank – bitte Internet prüfen.");
     }
   }
@@ -844,9 +991,14 @@
     var avatarHtml = guest
       ? '<span class="avatar">?</span>'
       : '<span class="avatar" style="background:'+(PLAYER_COLORS[name]||"#8A8A8A")+'">'+initials(name)+'</span>';
+    var entryRef = schedule && schedule[dateIdx];
+    var rec = entryRef && entryRef.subs ? entryRef.subs["s"+slotIdx] : null;
+    var subHtml = (rec && rec.from !== name)
+      ? '<small class="chip-sub">für '+esc(playerLabel(rec.from))+(rec.reason ? ' · '+esc(rec.reason) : '')+'</small>'
+      : '';
     return '<button class="chip'+(guest?' guest':'')+'" data-date-idx="'+dateIdx+'" data-slot-idx="'+slotIdx+'">'
       + avatarHtml
-      + '<span>'+label+(guest && customName ? ' · Gast' : '')+'</span>'
+      + '<span class="chip-text"><span>'+esc(label)+(guest && customName ? ' · Gast' : '')+'</span>'+subHtml+'</span>'
       + '</button>';
   }
 
@@ -874,7 +1026,10 @@
       + '</div>'
       + '<p class="meta">17:00–19:00 Uhr · TC Kamper</p>';
     if(entry.holiday){
-      html += '<span class="holiday-tag on-dark">Feiertag – Termin laut Plan unsicher</span>';
+      html += '<span class="holiday-tag on-dark">Feiertag – Termin laut Plan unsicher</span> ';
+    }
+    if(entry.origDate){
+      html += '<span class="holiday-tag on-dark">verschoben · ursprünglich '+fmtDDMMYYYY(parseDate(entry.origDate))+'</span>';
     }
     html += '</div></div>';
     html += '<div class="perforation"></div>';
@@ -902,8 +1057,11 @@
       var past = d < today;
       html += '<div class="row'+(past?' past':'')+'">'
         + '<div class="row-date-wrap">'
-        + '<span class="row-date"><span class="wk">'+weekdayShort(d)+'</span> <input type="date" class="date-edit-input" data-date-idx="'+i+'" value="'+entry.date+'"></span>'
-        + (entry.holiday ? '<span class="holiday-tag">Feiertag</span>' : '')
+        + '<span class="row-date"><span class="wk">'+weekdayShort(d)+'</span> <input type="date" class="date-edit-input" data-date-idx="'+i+'" value="'+esc(entry.date)+'"></span>'
+        + ((entry.holiday || entry.origDate) ? '<span class="tag-group">'
+            + (entry.origDate ? '<span class="moved-tag">verschoben · vorher '+fmtDDMM(parseDate(entry.origDate))+'</span>' : '')
+            + (entry.holiday ? '<span class="holiday-tag">Feiertag</span>' : '')
+            + '</span>' : '')
         + '</div>'
         + '<div class="row-players">';
       for(var s=0;s<entry.players.length;s++){
@@ -977,8 +1135,8 @@
         + '</div>'
         + '<span class="vs-label">gegen</span>'
         + '<div class="team-selects">'
-        + '<span class="team-select" style="background:transparent;border-color:transparent;padding-top:7px;">'+playerLabel(teamB[0])+'</span>'
-        + '<span class="team-select" style="background:transparent;border-color:transparent;padding-top:7px;">'+playerLabel(teamB[1])+'</span>'
+        + '<span class="team-select" style="background:transparent;border-color:transparent;padding-top:7px;">'+esc(playerLabel(teamB[0]))+'</span>'
+        + '<span class="team-select" style="background:transparent;border-color:transparent;padding-top:7px;">'+esc(playerLabel(teamB[1]))+'</span>'
         + '</div>'
         + '</div>';
 
@@ -996,8 +1154,8 @@
 
       var badgeClass = st.status==="A"||st.status==="B" ? "decided" : (st.status==="unentschieden" ? "tied" : "");
       var badgeText;
-      if(st.status==="A") badgeText = playerLabel(res.teamA[0])+' & '+playerLabel(res.teamA[1])+' gewinnen ('+st.setsA+':'+st.setsB+')';
-      else if(st.status==="B") badgeText = playerLabel(teamB[0])+' & '+playerLabel(teamB[1])+' gewinnen ('+st.setsB+':'+st.setsA+')';
+      if(st.status==="A") badgeText = esc(playerLabel(res.teamA[0]))+' & '+esc(playerLabel(res.teamA[1]))+' gewinnen ('+st.setsA+':'+st.setsB+')';
+      else if(st.status==="B") badgeText = esc(playerLabel(teamB[0]))+' & '+esc(playerLabel(teamB[1]))+' gewinnen ('+st.setsB+':'+st.setsA+')';
       else if(st.status==="unentschieden") badgeText = 'Unentschieden nach '+ (st.setsA+st.setsB) +' Sätzen';
       else badgeText = 'Ergebnis noch offen';
       html += '<span class="status-badge '+badgeClass+'">'+badgeText+'</span>';
@@ -1010,7 +1168,7 @@
 
   function buildTeamSelect(dateIdx, slotIdx, players, selected){
     var opts = players.map(function(p){
-      return '<option value="'+p.replace(/"/g,'&quot;')+'"'+(p===selected?' selected':'')+'>'+playerLabel(p)+'</option>';
+      return '<option value="'+esc(p)+'"'+(p===selected?' selected':'')+'>'+esc(playerLabel(p))+'</option>';
     }).join("");
     return '<select class="team-select" data-date-idx="'+dateIdx+'" data-slot-idx="'+slotIdx+'">'+opts+'</select>';
   }
@@ -1052,7 +1210,7 @@
     html += '</div>';
     html += '<p class="stats-note">Kostenanteil auf Basis des Aboplans: 26 Wochen, 104 Einsätze gesamt, €1.485,00 Gesamtpreis (≈ €'+PREIS_PRO_EINSATZ.toFixed(2).replace(".",",")+' pro Einsatz). Einsätze eines Gastspielers werden hier nicht auf die fünf Abonnenten verrechnet.</p>';
     html += '</div>';
-    statsEl.innerHTML = renderColarumSection() + html;
+    statsEl.innerHTML = renderColarumSection() + html + renderChangesSection();
   }
 
   function renderAll(){
@@ -1080,6 +1238,8 @@
       + '<span class="avatar" style="background:transparent;border:1.5px dashed var(--clay);color:var(--clay);">?</span>'
       + '<span>Gastspieler</span></button>';
     sheetOptions.innerHTML = optsHtml;
+    var subRec = entry.subs ? entry.subs["s"+slotIdx] : null;
+    reasonInput.value = subRec && subRec.reason ? subRec.reason : "";
     guestRow.classList.remove("open");
     guestInput.value = isGuest(current) && current.indexOf("Gast:")===0 ? current.slice(5).trim() : "";
     overlay.classList.add("open");
@@ -1092,11 +1252,32 @@
 
   async function applyChoice(name){
     if(!editTarget) return;
-    schedule[editTarget.dateIdx].players[editTarget.slotIdx] = name;
+    var entry = schedule[editTarget.dateIdx];
+    var slot = editTarget.slotIdx;
+    var key = "s"+slot;
+    var oldName = entry.players[slot];
+    var reason = reasonInput.value.trim().slice(0,40);
+    var rec = entry.subs ? entry.subs[key] : null;
+
+    if(name === oldName){
+      // gleicher Spieler: nur den Grund aktualisieren, falls geändert
+      if(rec && rec.reason !== reason){
+        rec.reason = reason;
+        await saveSchedule(false);
+        renderAll();
+        showToast("Grund gespeichert.");
+      }
+      closeSheet();
+      return;
+    }
+
+    recordSubstitution(entry, slot, oldName, name, reason);
+    entry.players[slot] = name;
+    var nowRec = entry.subs ? entry.subs[key] : null;
     await saveSchedule(false);
     renderAll();
     closeSheet();
-    showToast("Gespeichert.");
+    showToast(nowRec ? "Gespeichert und im Protokoll vermerkt." : "Gespeichert.");
   }
 
   document.addEventListener("change", async function(e){
@@ -1104,7 +1285,12 @@
       var idx = parseInt(e.target.getAttribute("data-date-idx"),10);
       var newDate = e.target.value;
       if(newDate && schedule[idx] && newDate !== schedule[idx].date){
-        schedule[idx].date = newDate;
+        var movedEntry = schedule[idx];
+        var oldDate = movedEntry.date;
+        movedEntry.date = newDate;
+        if(!movedEntry.origDate) movedEntry.origDate = oldDate;
+        if(movedEntry.origDate === newDate){ delete movedEntry.origDate; delete movedEntry.movedTs; }
+        else movedEntry.movedTs = Date.now();
         schedule.sort(function(a,b){ return parseDate(a.date) - parseDate(b.date); });
         await saveSchedule(false);
         renderAll();
@@ -1123,6 +1309,11 @@
   document.addEventListener("click", function(e){
     var t = e.target;
     if(!t || !t.closest) return;
+    var quick = t.closest(".reason-quick");
+    if(quick){
+      reasonInput.value = quick.getAttribute("data-reason");
+      return;
+    }
     var addBtn = t.closest("[data-colarum-add]");
     if(addBtn){
       addColarum(addBtn.getAttribute("data-colarum-add"));
@@ -1144,6 +1335,10 @@
     }
     if(t.closest("#colarumToggle")){
       showAllColarum = !showAllColarum;
+      renderStats();
+    }
+    if(t.closest("#changesToggle")){
+      showAllChanges = !showAllChanges;
       renderStats();
     }
   });
