@@ -90,6 +90,7 @@
 
   main{max-width:520px; margin:0 auto; padding:0 16px;}
 
+  /* ---- hero: match ticket ---- */
   .hero{
     margin-top:18px;
     border-radius:20px;
@@ -283,12 +284,39 @@
   .stats-num{width:104px; text-align:right; font-size:12.5px; color:var(--ink-soft); flex-shrink:0;}
   .stats-note{font-size:12.5px; color:var(--ink-soft); margin:12px 4px 0; line-height:1.55;}
 
-  .reset-link{
-    display:block; text-align:center; margin:24px auto 4px;
-    font-size:13px; color:var(--ink-soft); background:none; border:none;
-    text-decoration:underline; cursor:pointer; font-family:'Inter',sans-serif;
+  /* ---- Cola-Rum-Runde ---- */
+  .colarum-info{flex:1; min-width:0; display:flex; flex-direction:column; gap:5px;}
+  .colarum-meta{font-size:11.5px; color:var(--ink-soft);}
+  .colarum-add{
+    width:36px; height:36px; border-radius:50%; border:none; flex-shrink:0;
+    background:var(--ball); color:var(--ball-ink);
+    font-size:22px; font-weight:700; line-height:1; cursor:pointer;
+    font-family:'Inter',sans-serif;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .colarum-add:active{transform:scale(0.92);}
+  .colarum-sub{
+    font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:16px;
+    color:var(--ink); margin:20px 0 8px 2px;
+  }
+  .colarum-log{
+    display:flex; align-items:center; gap:10px; padding:9px 12px;
+    background:var(--paper); border:1px solid var(--line); border-radius:12px; margin-bottom:6px;
+  }
+  .colarum-log .avatar{width:22px; height:22px; font-size:10px;}
+  .colarum-log .log-text{flex:1; min-width:0; font-size:13px;}
+  .log-paid{
+    border:1px solid var(--clay); color:var(--clay); background:var(--clay-soft);
+    border-radius:10px; padding:4px 10px; font-size:12px; font-weight:600;
+    cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  .log-paid.is-paid{border-color:var(--court); color:var(--chalk); background:var(--court);}
+  .log-del{
+    border:none; background:none; color:var(--ink-soft); font-size:20px; line-height:1;
+    cursor:pointer; padding:0 4px; font-family:'Inter',sans-serif;
   }
 
+  /* ---- Ergebnisse ---- */
   .bilanz-table{margin-top:16px; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--paper);}
   .bilanz-row{display:flex; align-items:center; gap:11px; padding:12px 14px; border-bottom:1px solid var(--line);}
   .bilanz-row:last-child{border-bottom:none;}
@@ -324,6 +352,7 @@
   .status-badge.decided{background:var(--court); color:var(--chalk);}
   .status-badge.tied{background:var(--clay-soft); color:var(--clay);}
 
+  /* bottom sheet */
   .overlay{
     position:fixed; inset:0; background:rgba(30,42,34,0.38);
     display:flex; align-items:flex-end; justify-content:center; z-index:50;
@@ -464,7 +493,11 @@
 (function(){
   "use strict";
 
+  // ====== EINRICHTUNG ======
+  // Hier die eigene, private Firebase-Datenbank-URL eintragen (siehe Anleitung).
+  // Beispiel: "https://donnerstagrunde-default-rtdb.europe-west1.firebasedatabase.app"
   var FIREBASE_DB_URL = "https://tennis-abo-312a8-default-rtdb.europe-west1.firebasedatabase.app";
+  // ==========================
 
   function isConfigured(){
     return FIREBASE_DB_URL.indexOf("DEIN-PROJEKT-ID") === -1;
@@ -510,7 +543,7 @@
   ];
 
   var schedule = null;
-  var editTarget = null;
+  var editTarget = null; // {dateIdx, slotIdx}
 
   var heroEl = document.getElementById("hero");
   var seasonEl = document.getElementById("seasonView");
@@ -547,6 +580,177 @@
   }
 
   var expandedThirdSet = {};
+
+  // ---- Cola-Rum-Runde (Schläger fallen gelassen) ----
+  var colarum = [];
+  var colarumBusy = 0;
+  var showAllColarum = false;
+
+  function isoToday(){
+    var d = new Date();
+    return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+  }
+  function newColarumId(){
+    return "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  }
+  function colarumUrl(path){
+    return FIREBASE_DB_URL + "/colarum" + path + ".json";
+  }
+
+  async function loadColarum(){
+    if(colarumBusy > 0) return;
+    try{
+      var res = await fetch(colarumUrl(""));
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      var data = await res.json();
+      var list = [];
+      if(data){
+        Object.keys(data).forEach(function(k){
+          var e = data[k];
+          if(e && e.player){
+            list.push({id:k, player:e.player, date:e.date||"", paid:!!e.paid, ts:e.ts||0});
+          }
+        });
+      }
+      list.sort(function(a,b){ return b.ts - a.ts; });
+      colarum = list;
+    }catch(e){
+      // Verbindungsfehler meldet bereits loadSchedule; bisheriger Stand bleibt erhalten
+    }
+  }
+
+  async function addColarum(player){
+    var ev = {player:player, date:isoToday(), paid:false, ts:Date.now()};
+    var id = newColarumId();
+    colarum.unshift({id:id, player:ev.player, date:ev.date, paid:false, ts:ev.ts});
+    renderStats();
+    colarumBusy++;
+    try{
+      var res = await fetch(colarumUrl("/"+id), {
+        method:"PUT",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify(ev)
+      });
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      showToast(player+" schuldet eine Cola-Rum-Runde.");
+    }catch(e){
+      colarum = colarum.filter(function(x){ return x.id !== id; });
+      renderStats();
+      showToast("Speichern fehlgeschlagen – bitte erneut versuchen.");
+    }finally{
+      colarumBusy--;
+    }
+  }
+
+  async function setColarumPaid(id, paid){
+    var item = colarum.filter(function(x){ return x.id === id; })[0];
+    if(!item) return;
+    var old = item.paid;
+    item.paid = paid;
+    renderStats();
+    colarumBusy++;
+    try{
+      var res = await fetch(colarumUrl("/"+id+"/paid"), {
+        method:"PUT",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify(paid)
+      });
+      if(!res.ok) throw new Error("HTTP "+res.status);
+    }catch(e){
+      item.paid = old;
+      renderStats();
+      showToast("Speichern fehlgeschlagen – bitte erneut versuchen.");
+    }finally{
+      colarumBusy--;
+    }
+  }
+
+  async function deleteColarum(id){
+    var idx = -1;
+    for(var i=0;i<colarum.length;i++){ if(colarum[i].id === id){ idx = i; break; } }
+    if(idx === -1) return;
+    var removed = colarum.splice(idx,1)[0];
+    renderStats();
+    colarumBusy++;
+    try{
+      var res = await fetch(colarumUrl("/"+id), {
+        method:"PUT",
+        headers:{"Content-Type":"application/json"},
+        body: "null"
+      });
+      if(!res.ok) throw new Error("HTTP "+res.status);
+    }catch(e){
+      colarum.push(removed);
+      colarum.sort(function(a,b){ return b.ts - a.ts; });
+      renderStats();
+      showToast("Löschen fehlgeschlagen – bitte erneut versuchen.");
+    }finally{
+      colarumBusy--;
+    }
+  }
+
+  function renderColarumSection(){
+    var counts = {};
+    PLAYERS.forEach(function(p){ counts[p] = {open:0, paid:0}; });
+    colarum.forEach(function(e){
+      if(!counts[e.player]) return;
+      if(e.paid) counts[e.player].paid++; else counts[e.player].open++;
+    });
+    function totalOf(p){ return counts[p].open + counts[p].paid; }
+    var order = PLAYERS.slice().sort(function(a,b){
+      return (totalOf(b) - totalOf(a)) || (PLAYERS.indexOf(a) - PLAYERS.indexOf(b));
+    });
+    var max = Math.max.apply(null, order.map(totalOf).concat([1]));
+    var totalAll = 0, totalOpen = 0;
+    PLAYERS.forEach(function(p){ totalAll += totalOf(p); totalOpen += counts[p].open; });
+
+    function rundenText(n){ return n + (n === 1 ? " Runde" : " Runden"); }
+
+    var html = '<div class="month-group"><p class="month-title">Cola-Rum-Runde</p><div class="net-divider"></div>'
+      + '<p class="stats-note" style="margin:0 2px 12px;">Wer den Schläger fallen lässt, zahlt eine ganze Cola-Rum-Runde – aus rein disziplinären Gründen, versteht sich. Berufung ist nicht vorgesehen, Ausreden werden nicht protokolliert. Zum Eintragen einfach auf das Plus tippen.</p>'
+      + '<div class="stats-table">';
+    order.forEach(function(p){
+      var c = counts[p];
+      var pct = Math.round((totalOf(p)/max)*100);
+      html += '<div class="stats-row">'
+        + '<span class="avatar" style="background:'+PLAYER_COLORS[p]+'">'+initials(p)+'</span>'
+        + '<span class="stats-name">'+p+'</span>'
+        + '<span class="colarum-info">'
+        +   '<span class="stats-bar-wrap"><span class="stats-bar" style="width:'+pct+'%;background:'+PLAYER_COLORS[p]+';"></span></span>'
+        +   '<span class="colarum-meta">'+c.open+' offen · '+c.paid+' bezahlt</span>'
+        + '</span>'
+        + '<button class="colarum-add" data-colarum-add="'+p+'" aria-label="Schlägerwurf für '+p+' eintragen">+</button>'
+        + '</div>';
+    });
+    html += '</div>';
+
+    if(totalAll === 0){
+      html += '<p class="stats-note">Noch kein Schläger geflogen. Die Disziplin hält – vorerst.</p>';
+    }else{
+      var leaders = order.filter(function(p){ return totalOf(p) === max; });
+      html += '<span class="status-badge tied" style="margin-top:12px;">Schläger-König: '+leaders.join(", ")
+        + ' ('+(leaders.length>1 ? 'je ' : '')+max+(max===1 ? ' Wurf' : ' Würfe')+')</span>';
+      html += '<p class="stats-note" style="margin-top:8px;">Gesamt: '+rundenText(totalAll)
+        + (totalOpen > 0 ? ', davon '+totalOpen+' offen. Die Bar freut sich.' : ', alle beglichen. Vorbildlich.')+'</p>';
+
+      var shown = showAllColarum ? colarum : colarum.slice(0,8);
+      html += '<p class="colarum-sub">Disziplinarprotokoll</p>';
+      shown.forEach(function(e){
+        var dateText = e.date ? fmtDDMMYYYY(parseDate(e.date)) : "";
+        html += '<div class="colarum-log">'
+          + '<span class="avatar" style="background:'+(PLAYER_COLORS[e.player]||"#8A8A8A")+'">'+initials(e.player)+'</span>'
+          + '<span class="log-text"><b>'+e.player+'</b> · '+dateText+'</span>'
+          + '<button class="log-paid'+(e.paid?' is-paid':'')+'" data-colarum-paid="'+e.id+'">'+(e.paid?'bezahlt':'offen')+'</button>'
+          + '<button class="log-del" data-colarum-del="'+e.id+'" aria-label="Eintrag löschen">×</button>'
+          + '</div>';
+      });
+      if(colarum.length > 8){
+        html += '<button class="add-set-btn" id="colarumToggle">'+(showAllColarum ? 'Weniger anzeigen' : 'Alle '+colarum.length+' anzeigen')+'</button>';
+      }
+    }
+    html += '</div>';
+    return html;
+  }
 
   function normalizeResult(entry){
     if(!entry.result){
@@ -712,6 +916,7 @@
   }
 
   function renderResults(){
+    // Saisonbilanz
     var tally = {};
     PLAYERS.forEach(function(p){ tally[p] = {w:0,l:0}; });
     schedule.forEach(function(entry){
@@ -740,6 +945,7 @@
     html += '</div>';
     html += '<p class="stats-note">Sieg oder Niederlage zählt für alle Spieler eines Teams, sobald ein Spiel entschieden ist. Ein Gastspieler taucht in dieser Bilanz nicht auf, sein Teampartner schon.</p>';
 
+    // Einzelne Spiele
     var today = todayMidnight();
     var lastMonth = "";
     html += '<div id="matchList">';
@@ -821,7 +1027,8 @@
       });
     });
     var max = Math.max.apply(null, PLAYERS.map(function(p){return counts[p];}).concat([1]));
-    var html = '<div class="stats-table">';
+    var html = '<div class="month-group"><p class="month-title">Einsätze und Kosten</p><div class="net-divider"></div>'
+      + '<div class="stats-table" style="margin-top:0;">';
     PLAYERS.forEach(function(p){
       var c = counts[p]||0;
       var pct = Math.round((c/max)*100);
@@ -844,16 +1051,8 @@
     }
     html += '</div>';
     html += '<p class="stats-note">Kostenanteil auf Basis des Aboplans: 26 Wochen, 104 Einsätze gesamt, €1.485,00 Gesamtpreis (≈ €'+PREIS_PRO_EINSATZ.toFixed(2).replace(".",",")+' pro Einsatz). Einsätze eines Gastspielers werden hier nicht auf die fünf Abonnenten verrechnet.</p>';
-    html += '<button class="reset-link" id="resetBtn">Ursprünglichen Plan wiederherstellen</button>';
-    statsEl.innerHTML = html;
-    document.getElementById("resetBtn").addEventListener("click", async function(){
-      if(confirm("Alle Änderungen verwerfen und den ursprünglichen Aboplan wiederherstellen?")){
-        schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
-        await saveSchedule(false);
-        renderAll();
-        showToast("Ursprünglicher Plan wiederhergestellt.");
-      }
-    });
+    html += '</div>';
+    statsEl.innerHTML = renderColarumSection() + html;
   }
 
   function renderAll(){
@@ -918,6 +1117,34 @@
     var chip = e.target.closest ? e.target.closest(".chip") : null;
     if(chip && chip.dataset.dateIdx !== undefined){
       openSheet(parseInt(chip.dataset.dateIdx,10), parseInt(chip.dataset.slotIdx,10));
+    }
+  });
+
+  document.addEventListener("click", function(e){
+    var t = e.target;
+    if(!t || !t.closest) return;
+    var addBtn = t.closest("[data-colarum-add]");
+    if(addBtn){
+      addColarum(addBtn.getAttribute("data-colarum-add"));
+      return;
+    }
+    var paidBtn = t.closest("[data-colarum-paid]");
+    if(paidBtn){
+      var pid = paidBtn.getAttribute("data-colarum-paid");
+      var item = colarum.filter(function(x){ return x.id === pid; })[0];
+      if(item) setColarumPaid(pid, !item.paid);
+      return;
+    }
+    var delBtn = t.closest("[data-colarum-del]");
+    if(delBtn){
+      if(confirm("Diesen Eintrag aus dem Disziplinarprotokoll streichen?")){
+        deleteColarum(delBtn.getAttribute("data-colarum-del"));
+      }
+      return;
+    }
+    if(t.closest("#colarumToggle")){
+      showAllColarum = !showAllColarum;
+      renderStats();
     }
   });
 
@@ -1012,7 +1239,7 @@
   document.getElementById("refreshBtn").addEventListener("click", async function(){
     var btn = this;
     btn.classList.add("spin");
-    await loadSchedule();
+    await Promise.all([loadSchedule(), loadColarum()]);
     renderAll();
     setTimeout(function(){ btn.classList.remove("spin"); }, 400);
   });
@@ -1020,7 +1247,7 @@
   setInterval(async function(){
     if(!isConfigured()) return;
     if(overlay.classList.contains("open")) return;
-    await loadSchedule();
+    await Promise.all([loadSchedule(), loadColarum()]);
     renderAll();
   }, 12000);
 
@@ -1030,7 +1257,7 @@
         + '<p class="hero-empty" style="color:var(--chalk);">Bitte zuerst die eigene Datenbank-URL im Code eintragen (Variable FIREBASE_DB_URL, siehe Anleitung).</p></div>';
       return;
     }
-    await loadSchedule();
+    await Promise.all([loadSchedule(), loadColarum()]);
     renderAll();
   })();
 })();
