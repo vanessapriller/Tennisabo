@@ -619,6 +619,80 @@
 
   var expandedThirdSet = {};
 
+  // ---- Datenbereinigung ----
+  // Firebase speichert keine leeren Felder und macht aus Listen mit Lücken
+  // Listen mit null-Einträgen oder sogar Objekte. Hier wird alles in die
+  // erwartete Form gebracht, damit die Anzeige nie daran scheitert.
+  function toList(v){
+    if(Array.isArray(v)) return v;
+    if(v && typeof v === "object"){
+      var out = [];
+      Object.keys(v).forEach(function(k){
+        if(/^\d+$/.test(k)) out[parseInt(k,10)] = v[k];
+      });
+      return out;
+    }
+    return [];
+  }
+  function numOrNull(x){
+    if(typeof x === "number" && isFinite(x)) return x;
+    if(typeof x === "string" && x.trim() !== "" && isFinite(Number(x))) return Number(x);
+    return null;
+  }
+  function sanitizeSchedule(raw){
+    var defaults = {};
+    DEFAULT_SCHEDULE.forEach(function(e){ defaults[e.date] = e; });
+    var list = toList(raw).filter(function(e){
+      return e && typeof e === "object" && typeof e.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(e.date);
+    });
+    list.forEach(function(entry){
+      var base = defaults[entry.origDate || entry.date];
+      var pl = toList(entry.players);
+      var players = [];
+      for(var i=0;i<4;i++){
+        var p = pl[i];
+        players.push((typeof p === "string" && p) ? p : (base ? base.players[i] : "Gast"));
+      }
+      entry.players = players;
+      entry.holiday = !!entry.holiday;
+      if(typeof entry.origDate !== "string") delete entry.origDate;
+      if(typeof entry.movedTs !== "number") delete entry.movedTs;
+
+      if(entry.result && typeof entry.result === "object"){
+        var teamA = toList(entry.result.teamA).filter(function(n){ return typeof n === "string"; });
+        var rawSets = toList(entry.result.sets);
+        var sets = [];
+        for(var j=0;j<3;j++){
+          var st = rawSets[j];
+          var ok = st && typeof st === "object";
+          sets.push({a: ok ? numOrNull(st.a) : null, b: ok ? numOrNull(st.b) : null});
+        }
+        entry.result = {teamA:teamA, sets:sets};
+      }else{
+        delete entry.result;
+      }
+
+      if(entry.subs && typeof entry.subs === "object"){
+        var subs = {};
+        Object.keys(entry.subs).forEach(function(k){
+          var rec = entry.subs[k];
+          if(/^s\d$/.test(k) && rec && typeof rec === "object" && typeof rec.from === "string"){
+            subs[k] = {
+              from: rec.from,
+              reason: typeof rec.reason === "string" ? rec.reason : "",
+              ts: typeof rec.ts === "number" ? rec.ts : 0
+            };
+          }
+        });
+        if(Object.keys(subs).length) entry.subs = subs; else delete entry.subs;
+      }else{
+        delete entry.subs;
+      }
+    });
+    list.sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+    return list;
+  }
+
   // ---- Colarum-Konto (Schläger fallen gelassen) ----
   var colarum = [];
   var colarumBusy = 0;
@@ -951,7 +1025,8 @@
       if(!res.ok) throw new Error("HTTP "+res.status);
       var data = await res.json();
       if(data){
-        schedule = data;
+        var clean = sanitizeSchedule(data);
+        schedule = clean.length ? clean : JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
       }else{
         schedule = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE));
         await saveSchedule(true);
@@ -1213,11 +1288,24 @@
     statsEl.innerHTML = renderColarumSection() + html + renderChangesSection();
   }
 
+  // Ein Fehler in einem Bereich darf nie die anderen Bereiche lahmlegen.
+  function safeRender(fn, el, label){
+    try{
+      fn();
+    }catch(e){
+      if(window.console) console.error(e);
+      if(el){
+        el.innerHTML = '<p class="stats-note" style="margin:16px 4px;">Anzeigefehler im Bereich „'+esc(label)+'“ ('
+          + esc(e && e.message ? e.message : e)+'). Bitte die Seite neu laden.</p>';
+      }
+    }
+  }
+
   function renderAll(){
-    renderHero();
-    renderSeason();
-    renderResults();
-    renderStats();
+    safeRender(renderHero, heroEl, "Nächster Spieltag");
+    safeRender(renderSeason, seasonEl, "Saison");
+    safeRender(renderResults, resultsEl, "Ergebnisse");
+    safeRender(renderStats, statsEl, "Statistik");
   }
 
   function openSheet(dateIdx, slotIdx){
@@ -1442,8 +1530,12 @@
   setInterval(async function(){
     if(!isConfigured()) return;
     if(overlay.classList.contains("open")) return;
-    await Promise.all([loadSchedule(), loadColarum()]);
-    renderAll();
+    try{
+      await Promise.all([loadSchedule(), loadColarum()]);
+      renderAll();
+    }catch(e){
+      if(window.console) console.error(e);
+    }
   }, 12000);
 
   (async function init(){
